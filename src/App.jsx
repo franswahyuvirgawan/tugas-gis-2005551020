@@ -67,7 +67,7 @@ function MyMap() {
           center={{ lat: -8.60355596857304, lng: 115.25943918278261 }}
           zoom={15}
           scrollWheelZoom={false}
-          style={{ height: "400px", width: "1000px", borderRadius: "px" }}
+          style={{ height: "400px", width: "1000px", borderRadius: "0px" }}
         >
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -76,7 +76,11 @@ function MyMap() {
           <MyComponent saveLocation={saveLocation} />
           <MarkerMuster>
             {locationData.map((location, index) => (
-              <Marker key={index} position={[location.lat, location.lng]}>
+              <Marker
+                icon={icon}
+                key={index}
+                position={[location.lat, location.lng]}
+              >
                 <Popup>{`Location: ${location.locationName}\nLatitude: ${location.lat}, Longitude: ${location.lng}`}</Popup>
               </Marker>
             ))}
