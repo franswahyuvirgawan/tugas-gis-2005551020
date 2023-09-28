@@ -1,7 +1,12 @@
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        martian: ["Martian Mono", "monospace"],
+      },
+    },
   },
-  plugins: [],
+  plugins: [require("daisyui")],
 };
