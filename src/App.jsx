@@ -66,7 +66,7 @@ function MyMap() {
           className="Map"
           center={{ lat: -8.60355596857304, lng: 115.25943918278261 }}
           zoom={15}
-          scrollWheelZoom={false}
+          scrollWheelZoom={true}
           style={{ height: "400px", width: "1000px", borderRadius: "0px" }}
         >
           <TileLayer
@@ -86,25 +86,25 @@ function MyMap() {
             ))}
           </MarkerMuster>
         </MapContainer>
-        <div className="overflow-x-auto h-[400px] w-[800px]">
-          <table className="table table-base table-pin-rows table-pin-cols table-zebra">
+        <div className="overflow-x-auto h-[400px] w-[800px] font-[300]">
+          <table className="table table-xs table-pin-rows table-pin-cols table-zebra">
             <thead>
               <tr>
-                <th></th>
-                <td>Location Name</td>
-                <td>Latitude</td>
-                <td>Longitude</td>
-                <th></th>
+                <th className="p-[16px]"></th>
+                <td className="p-[16px]">Location Name</td>
+                <td className="p-[16px]">Latitude</td>
+                <td className="p-[16px]">Longitude</td>
+                <th className="p-[16px]"></th>
               </tr>
             </thead>
             <tbody>
               {locationData.toReversed().map((location, index) => (
                 <tr>
-                  <th>{index + 1}</th>
-                  <td>{location.locationName}</td>
-                  <td>{location.lat}</td>
-                  <td>{location.lng}</td>
-                  <th>{index + 1}</th>
+                  <th className="p-[16px]">{index + 1}</th>
+                  <td className="p-[16px]">{location.locationName}</td>
+                  <td className="p-[16px]">{location.lat}</td>
+                  <td className="p-[16px]">{location.lng}</td>
+                  <th className="p-[16px]">{index + 1}</th>
                 </tr>
               ))}
             </tbody>
