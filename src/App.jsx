@@ -53,7 +53,8 @@ function MyMap() {
     setLocationData([...locationData, newLocationData]);
   };
 
-  const handleDeleteMarker = (index) => {
+  const handleDeleteMarker = (e, index) => {
+    e.preventDefault(); // Mencegah perilaku default klik kanan
     const updatedLocationData = [...locationData];
     updatedLocationData.splice(index, 1);
     setLocationData(updatedLocationData);
@@ -112,7 +113,7 @@ function MyMap() {
                 {`Location: ${location.locationName}\nLatitude: ${location.lat}, Longitude: ${location.lng}`}
                 <div
                   className="cursor-pointer"
-                  onContextMenu={() => handleDeleteMarker(index)}
+                  onContextMenu={(e) => handleDeleteMarker(e, index)}
                 >
                   Delete
                 </div>
