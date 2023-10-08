@@ -36,7 +36,9 @@ function MyComponent({ saveLocation }) {
             lng,
             locationName,
           };
-          saveLocation(locationData); // Menyimpan informasi lengkap lokasi
+
+          // Menyimpan informasi lengkap lokasi
+          saveLocation(locationData);
         }
       } catch (error) {
         console.error("Error fetching location data", error);
@@ -48,19 +50,45 @@ function MyComponent({ saveLocation }) {
 
 function MyMap() {
   const [locationData, setLocationData] = useState([]);
+  const [gisData, setGisData] = useState([]);
 
-  const saveLocation = (newLocationData) => {
-    setLocationData([...locationData, newLocationData]);
+  useEffect(() => {
+    // Mengambil data dari server saat komponen pertama kali dimuat
+    axios
+      .get("http://localhost:8888/api/gis")
+      .then((response) => {
+        // Mengisi data ke dalam state gisData
+        setGisData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching GIS data", error);
+      });
+  }, [locationData]);
+
+  const saveLocation = async (newLocationData) => {
+    setLocationData(newLocationData);
+    try {
+      // Mengirim data ke server menggunakan POST request
+      const postResponse = await axios.post(
+        "http://localhost:8888/api/gis/save",
+        newLocationData
+      );
+
+      if (postResponse.data.status === 1) {
+        // Jika permintaan POST berhasil, maka tambahkan data ke state gisData dengan ID yang diberikan oleh server
+        newLocationData.id = postResponse.data.id; // Anggap server memberikan ID dalam respons
+        setGisData([...gisData, newLocationData]);
+      } else {
+        console.error("Failed to save location data on the server");
+      }
+    } catch (error) {
+      console.error("Error saving location data", error);
+    }
   };
 
-  const handleDeleteMarker = (e, index) => {
-    e.preventDefault(); // Mencegah perilaku default klik kanan
-    const updatedLocationData = [...locationData];
-    updatedLocationData.splice(index, 1);
-    setLocationData(updatedLocationData);
-  };
-
-  const updateMarkerPosition = async (index, newPosition) => {
+  const updateMarkerPosition = async (locationId, newPosition) => {
+    const locationIdInt = parseInt(locationId, 10);
+    console.log(locationIdInt);
     try {
       const response = await axios.get(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${newPosition.lat}&longitude=${newPosition.lng}&localityLanguage=en`
@@ -68,17 +96,83 @@ function MyMap() {
 
       if (response.data.locality) {
         const newLocationName = response.data.locality;
-        const updatedLocationData = [...locationData];
-        updatedLocationData[index] = {
-          ...updatedLocationData[index],
+
+        // Persiapan data yang akan dikirim ke server
+        const updatedData = {
           lat: newPosition.lat,
           lng: newPosition.lng,
           locationName: newLocationName,
         };
-        setLocationData(updatedLocationData);
+
+        console.log(updatedData);
+
+        // Melakukan permintaan PUT untuk memperbarui data lokasi di server
+        const updateResponse = await axios.put(
+          `http://localhost:8888/api/gis/${locationIdInt}/edit`,
+          updatedData
+        );
+
+        console.log("Update response:", updateResponse);
+        if (updateResponse.data.status === 1) {
+          // Jika permintaan PUT berhasil di server, maka perbarui data lokasi di state gisData
+          const updatedLocationData = gisData.map((location) => {
+            if (location.id === locationId) {
+              return {
+                ...location,
+                lat: newPosition.lat,
+                lng: newPosition.lng,
+                locationName: newLocationName,
+              };
+            }
+            return location;
+          });
+          setGisData(updatedLocationData);
+        } else {
+          console.error("Failed to update location data on the server");
+        }
       }
     } catch (error) {
-      console.error("Error fetching location data", error);
+      console.error("Error fetching location data or updating location", error);
+    }
+  };
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:8888/api/gis")
+      .then((response) => {
+        // Mengubah string menjadi angka
+        const gisDataWithNumbers = response.data.map((item) => ({
+          ...item,
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lng),
+        }));
+        setGisData(gisDataWithNumbers);
+      })
+      .catch((error) => {
+        console.error("Error fetching GIS data", error);
+      });
+  }, [locationData]);
+
+  console.log(gisData);
+
+  const handleDeleteMarker = async (locationId) => {
+    try {
+      // Kirim permintaan DELETE ke server
+      const deleteResponse = await axios.delete(
+        `http://localhost:8888/api/gis/${locationId}/delete`
+      );
+
+      if (deleteResponse.data.status === 1) {
+        // Jika penghapusan berhasil di server, perbarui state gisData
+        const updatedLocationData = gisData.filter(
+          (location) => location.id !== locationId
+        );
+        setGisData(updatedLocationData);
+      } else {
+        console.error("Failed to delete location data on the server");
+      }
+    } catch (error) {
+      console.error("Error deleting location data", error);
     }
   };
 
@@ -98,22 +192,22 @@ function MyMap() {
         />
         <MyComponent saveLocation={saveLocation} />
         <MarkerMuster>
-          {locationData.map((location, index) => (
+          {gisData?.map((location) => (
             <Marker
               draggable={true}
               icon={icon}
-              key={index}
+              key={location.id}
               position={[location.lat, location.lng]}
               eventHandlers={{
                 dragend: (e) =>
-                  updateMarkerPosition(index, e.target.getLatLng()),
+                  updateMarkerPosition(location.id, e.target.getLatLng()),
               }}
             >
               <Popup>
                 {`Location: ${location.locationName}\nLatitude: ${location.lat}, Longitude: ${location.lng}`}
                 <div
                   className="cursor-pointer"
-                  onContextMenu={(e) => handleDeleteMarker(e, index)}
+                  onClick={() => handleDeleteMarker(location.id)}
                 >
                   Delete
                 </div>
@@ -134,14 +228,16 @@ function MyMap() {
             </tr>
           </thead>
           <tbody>
-            {locationData.map((location, index) => (
-              <tr key={index}>
-                <th className="p-[16px]">{index + 1}</th>
+            {gisData?.map((location) => (
+              <tr key={location.id}>
+                <th className="p-[16px]">{location.id}</th>
                 <td className="p-[16px]">{location.locationName}</td>
                 <td className="p-[16px]">{location.lat}</td>
                 <td className="p-[16px]">{location.lng}</td>
                 <th className="p-[16px]">
-                  <div onClick={() => handleDeleteMarker(index)}>Delete</div>
+                  <div onClick={() => handleDeleteMarker(location.id)}>
+                    Delete
+                  </div>
                 </th>
               </tr>
             ))}
