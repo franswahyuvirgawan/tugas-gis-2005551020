@@ -70,7 +70,7 @@ function MyMap() {
     try {
       // Mengirim data ke server menggunakan POST request
       const postResponse = await axios.post(
-        "http://g_2005551020.gis.localnet/api/gis/save",
+        "http://g_2005551020.gis.localnet/api/save",
         newLocationData
       );
 
@@ -108,7 +108,7 @@ function MyMap() {
 
         // Melakukan permintaan PUT untuk memperbarui data lokasi di server
         const updateResponse = await axios.put(
-          `http://g_2005551020.gis.localnet/api/gis/${locationIdInt}/edit`,
+          `http://g_2005551020.gis.localnet/api/${locationIdInt}/edit`,
           updatedData
         );
 
@@ -159,7 +159,7 @@ function MyMap() {
     try {
       // Kirim permintaan DELETE ke server
       const deleteResponse = await axios.delete(
-        `http://g_2005551020.gis.localnet/api/gis/${locationId}/delete`
+        `http://g_2005551020.gis.localnet/api/${locationId}/delete`
       );
 
       if (deleteResponse.data.status === 1) {
