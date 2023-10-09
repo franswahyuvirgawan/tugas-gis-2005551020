@@ -56,7 +56,7 @@ function MyMap() {
   useEffect(() => {
     // Mengambil data dari server saat komponen pertama kali dimuat
     axios
-      .get("http://g_2005551020.gis.localnet/api/")
+      .get("http://g_2005551020.gis.localnet/api/index.php")
       .then((response) => {
         // Mengisi data ke dalam state gisData
         setGisData(response.data);
@@ -71,7 +71,7 @@ function MyMap() {
     try {
       // Mengirim data ke server menggunakan POST request
       const postResponse = await axios.post(
-        "http://g_2005551020.gis.localnet/api/",
+        "http://g_2005551020.gis.localnet/api/index.php",
         newLocationData
       );
 
@@ -110,7 +110,7 @@ function MyMap() {
 
         // Melakukan permintaan PUT untuk memperbarui data lokasi di server
         const updateResponse = await axios.put(
-          `http://g_2005551020.gis.localnet/api/`,
+          `http://g_2005551020.gis.localnet/api/index.php`,
           updatedData
         );
 
@@ -140,7 +140,7 @@ function MyMap() {
 
   useEffect(() => {
     axios
-      .get("http://g_2005551020.gis.localnet/api/")
+      .get("http://g_2005551020.gis.localnet/api/index.php")
       .then((response) => {
         // Mengubah string menjadi angka
         const gisDataWithNumbers = response.data.map((item) => ({
@@ -164,7 +164,7 @@ function MyMap() {
 
       // Kirim permintaan DELETE ke server dengan data dalam body
       const deleteResponse = await axios.delete(
-        `http://g_2005551020.gis.localnet/api/`,
+        `http://g_2005551020.gis.localnet/api/index.php`,
         {
           data: requestData, // Menyertakan data dalam body request
           headers: {
