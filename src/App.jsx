@@ -51,6 +51,7 @@ function MyComponent({ saveLocation }) {
 function MyMap() {
   const [locationData, setLocationData] = useState([]);
   const [gisData, setGisData] = useState([]);
+  const [testDelete, setTestDelete] = useState("");
 
   useEffect(() => {
     // Mengambil data dari server saat komponen pertama kali dimuat
@@ -63,14 +64,14 @@ function MyMap() {
       .catch((error) => {
         console.error("Error fetching GIS data", error);
       });
-  }, [locationData]);
+  }, [locationData, testDelete]);
 
   const saveLocation = async (newLocationData) => {
     setLocationData(newLocationData);
     try {
       // Mengirim data ke server menggunakan POST request
       const postResponse = await axios.post(
-        "http://g_2005551020.gis.localnet/api/save",
+        "http://g_2005551020.gis.localnet/api/",
         newLocationData
       );
 
@@ -99,6 +100,7 @@ function MyMap() {
 
         // Persiapan data yang akan dikirim ke server
         const updatedData = {
+          id: locationId,
           lat: newPosition.lat,
           lng: newPosition.lng,
           locationName: newLocationName,
@@ -108,7 +110,7 @@ function MyMap() {
 
         // Melakukan permintaan PUT untuk memperbarui data lokasi di server
         const updateResponse = await axios.put(
-          `http://g_2005551020.gis.localnet/api/${locationIdInt}/edit`,
+          `http://g_2005551020.gis.localnet/api/`,
           updatedData
         );
 
@@ -138,7 +140,7 @@ function MyMap() {
 
   useEffect(() => {
     axios
-      .get("http://g_2005551020.gis.localnet/api/gis")
+      .get("http://g_2005551020.gis.localnet/api/")
       .then((response) => {
         // Mengubah string menjadi angka
         const gisDataWithNumbers = response.data.map((item) => ({
@@ -157,17 +159,28 @@ function MyMap() {
 
   const handleDeleteMarker = async (locationId) => {
     try {
-      // Kirim permintaan DELETE ke server
+      // Data yang ingin Anda kirim dalam body request
+      const requestData = { locationId };
+
+      // Kirim permintaan DELETE ke server dengan data dalam body
       const deleteResponse = await axios.delete(
-        `http://g_2005551020.gis.localnet/api/${locationId}/delete`
+        `http://g_2005551020.gis.localnet/api/`,
+        {
+          data: requestData, // Menyertakan data dalam body request
+          headers: {
+            "Content-Type": "application/json", // Set header content type sesuai kebutuhan
+          },
+        }
       );
+
+      setTestDelete(deleteResponse);
 
       if (deleteResponse.data.status === 1) {
         // Jika penghapusan berhasil di server, perbarui state gisData
         const updatedLocationData = gisData.filter(
           (location) => location.id !== locationId
         );
-        setGisData(updatedLocationData);
+        setTest(updatedLocationData);
       } else {
         console.error("Failed to delete location data on the server");
       }
@@ -175,6 +188,8 @@ function MyMap() {
       console.error("Error deleting location data", error);
     }
   };
+
+  console.log(gisData);
 
   return (
     <div className="flex justify-center items-center py-[80px] flex-col font-martian text-white gap-[50px]">
