@@ -6,11 +6,7 @@ export default {
   },
 
   theme: {
-    extend: {
-      fontFamily: {
-        martian: ["Martian Mono", "monospace"],
-      },
-    },
+    extend: {},
   },
   plugins: [require("daisyui")],
 };
