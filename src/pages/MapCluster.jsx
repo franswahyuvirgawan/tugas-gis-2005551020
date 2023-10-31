@@ -78,8 +78,6 @@ function MapCluster() {
   };
 
   const updateMarkerPosition = async (locationId, newPosition) => {
-    const locationIdInt = parseInt(locationId, 10);
-    console.log(locationIdInt);
     try {
       const response = await axios.get(
         `https://geocode.maps.co/reverse?lat=${newPosition.lat}&lon=${newPosition.lng}`
@@ -98,14 +96,7 @@ function MapCluster() {
           locationName: newLocationName,
         };
 
-        console.log(updatedData);
-
-        // Melakukan permintaan PUT untuk memperbarui data lokasi di server
-        const updateResponse = await axios.put(
-          `http://localhost:8888/api/index.php`,
-          updatedData
-        );
-
+        await axios.put(`http://localhost:8888/api/index.php`, updatedData);
         const updatedLocationData = gisData.map((location) => {
           if (location.id === locationId) {
             return {

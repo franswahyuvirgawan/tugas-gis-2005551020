@@ -21,21 +21,18 @@ L.Icon.Default.mergeOptions({
 const Polyline = () => {
   const featureGroupRef = useRef();
 
-  const [encodedPolylines, setEncodedPolylines] = useState([]);
+  const [encodeGis, setEncodeGis] = useState([]);
 
   useEffect(() => {
     const storedPolyline = localStorage.getItem("polylineCoordinates");
     if (storedPolyline) {
-      setEncodedPolylines(JSON.parse(storedPolyline));
+      setEncodeGis(JSON.parse(storedPolyline));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      "polylineCoordinates",
-      JSON.stringify(encodedPolylines)
-    );
-  }, [encodedPolylines]);
+    localStorage.setItem("polylineCoordinates", JSON.stringify(encodeGis));
+  }, [encodeGis]);
 
   const onCreated = (e) => {
     const marker = e.layer;
@@ -47,93 +44,64 @@ const Polyline = () => {
     const encodedPolyline = polyline.encode(
       coordinates.map((coord) => [coord.lat, coord.lng])
     );
-
-    // Generate a unique id for the polyline
-    const id = Date.now();
-
-    setEncodedPolylines((prevPolylines) => [
-      ...prevPolylines,
-      { id, encodedPolyline },
-    ]);
+    setEncodeGis((preGisEncode) => [...preGisEncode, encodedPolyline]);
   };
+
+  const decodedPolylines = encodeGis.map((encodedPolyline) => {
+    return polyline.decode(encodedPolyline);
+  });
 
   const onEdited = (e) => {
-    const storedPolyline = localStorage.getItem("polylineCoordinates");
     const editedLayers = e.layers.getLayers();
+    const storedPolyline = localStorage.getItem("polylineCoordinates");
 
-    // Add debugging logs
-    console.log("Edited Layers:", editedLayers);
+    console.log(editedLayers);
 
-    if (storedPolyline) {
-      let updatedPolylines = JSON.parse(storedPolyline);
+    const test = JSON.parse(storedPolyline);
+    const updatedCoordinates = test;
 
-      editedLayers.forEach((editedPolyline) => {
-        const id = editedPolyline.options.id;
-
-        // Add more debugging logs
-        console.log("Editing polyline with ID:", id);
-
-        const editedCoords = editedPolyline.getLatLngs().map((latLng) => ({
-          lat: latLng.lat,
-          lng: latLng.lng,
-        }));
-        const encodedPolyline = polyline.encode(
-          editedCoords.map((coord) => [coord.lat, coord.lng])
-        );
-
-        // Find and update the polyline with the new encoded coordinates
-        updatedPolylines = updatedPolylines.map((poly) => {
-          if (poly.id === id) {
-            return { id, encodedPolyline };
-          }
-          return poly;
-        });
-
-        // Add more debugging logs
-        console.log("Updated Polylines:", updatedPolylines);
-      });
-
-      // Store the updated polylines back in local storage
-      localStorage.setItem(
-        "polylineCoordinates",
-        JSON.stringify(updatedPolylines)
+    editedLayers.forEach((editedPolyline) => {
+      const editedCoords = editedPolyline.getLatLngs().map((latLng) => ({
+        lat: latLng.lat,
+        lng: latLng.lng,
+      }));
+      const encodedPolyline = polyline.encode(
+        editedCoords.map((coord) => [coord.lat, coord.lng])
       );
-      console.log(updatedPolylines);
+      console.log(encodedPolyline);
+      updatedCoordinates.push(encodedPolyline);
+    });
+    console.log(updatedCoordinates);
 
-      // If needed, update the state with the updated polylines
-      setEncodedPolylines(updatedPolylines);
-    }
+    // setEncodeGis(updatedCoordinates);
   };
+
+  console.log(encodeGis);
 
   const onDeleted = (e) => {
     e.layers.eachLayer((layer) => {
-      const id = layer.options.id;
-
-      // Remove the polyline with the matching id from the state
-      setEncodedPolylines((prevPolylines) =>
-        prevPolylines.filter((polyline) => polyline.id !== id)
+      const encodedPolyline = polyline.encode(
+        layer.getLatLngs().map((latLng) => [latLng.lat, latLng.lng])
       );
+
+      // Hapus polyline yang sesuai dari state atau array yang digunakan untuk menyimpan data polyline
+      const updatedEncodeGis = encodeGis.filter(
+        (poly) => poly !== encodedPolyline
+      );
+      setEncodeGis(updatedEncodeGis);
     });
   };
 
   useEffect(() => {
-    if (featureGroupRef.current) {
-      // Clear existing layers from the feature group
-      featureGroupRef.current.clearLayers();
-      // Add the decoded polylines back to the map
-      encodedPolylines.forEach((data) => {
-        const decodedCoords = polyline.decode(data.encodedPolyline);
-        const id = data.id;
-        const polylineLayer = L.polyline(decodedCoords, {
+    if (featureGroupRef.current && decodedPolylines.length > 0) {
+      decodedPolylines.forEach((coordSet) => {
+        const polyline = L.polyline(coordSet, {
           color: "blue",
-          id, // Store the id in the options
         });
-        featureGroupRef.current.addLayer(polylineLayer);
+        featureGroupRef.current.addLayer(polyline);
       });
     }
-  }, [encodedPolylines]);
-
-  console.log(encodedPolylines);
+  }, [decodedPolylines, encodeGis]);
 
   return (
     <>
