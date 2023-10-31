@@ -6,7 +6,6 @@ import polyline from "polyline-encoded";
 import L from "leaflet";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet/dist/leaflet.css";
-import axios from "axios";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -19,23 +18,24 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png",
 });
 
-const Polyline = () => {
+const PolylineLocal = () => {
   const featureGroupRef = useRef();
 
   const [encodedPolylines, setEncodedPolylines] = useState([]);
 
   useEffect(() => {
-    // Mengambil data polyline dari endpoint GET
-    axios
-      .get("http://localhost:8888/api/polyline.php")
-      .then((response) => {
-        // Menyimpan data yang diterima ke dalam state
-        setEncodedPolylines(response.data);
-      })
-      .catch((error) => {
-        console.error("Error saat mengambil data polyline:", error);
-      });
+    const storedPolyline = localStorage.getItem("polylineCoordinates");
+    if (storedPolyline) {
+      setEncodedPolylines(JSON.parse(storedPolyline));
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "polylineCoordinates",
+      JSON.stringify(encodedPolylines)
+    );
+  }, [encodedPolylines]);
 
   const onCreated = (e) => {
     const marker = e.layer;
@@ -51,40 +51,28 @@ const Polyline = () => {
     // Generate a unique id for the polyline
     const id = Date.now();
 
-    // POST request untuk menyimpan id dan encodedPolyline
-    axios
-      .post("http://localhost:8888/api/polyline.php", {
-        id: id,
-        encoded_polyline: encodedPolyline,
-      })
-      .then((response) => {
-        // Setelah berhasil menambahkan polyline, perbarui data dari server
-        axios
-          .get("http://localhost:8888/api/polyline.php")
-          .then((response) => {
-            setEncodedPolylines(response.data);
-          })
-          .catch((error) => {
-            console.error("Error saat mengambil data polyline:", error);
-          });
-      });
+    setEncodedPolylines((prevPolylines) => [
+      ...prevPolylines,
+      { id, encodedPolyline },
+    ]);
   };
 
-  const onEdited = async (e) => {
-    let storedPolyline = [];
-    try {
-      const response = await axios.get(
-        "http://localhost:8888/api/polyline.php"
-      );
-      storedPolyline = response.data;
-    } catch (error) {
-      console.error("Error saat mengambil data polyline:", error);
-    }
+  const onEdited = (e) => {
+    const storedPolyline = localStorage.getItem("polylineCoordinates");
     const editedLayers = e.layers.getLayers();
 
+    // Add debugging logs
+    console.log("Edited Layers:", editedLayers);
+
     if (storedPolyline) {
-      editedLayers.forEach(async (editedPolyline) => {
+      let updatedPolylines = JSON.parse(storedPolyline);
+
+      editedLayers.forEach((editedPolyline) => {
         const id = editedPolyline.options.id;
+
+        // Add more debugging logs
+        console.log("Editing polyline with ID:", id);
+
         const editedCoords = editedPolyline.getLatLngs().map((latLng) => ({
           lat: latLng.lat,
           lng: latLng.lng,
@@ -93,56 +81,38 @@ const Polyline = () => {
           editedCoords.map((coord) => [coord.lat, coord.lng])
         );
 
-        // Temukan indeks polyline yang sesuai dengan ID dalam data yang ada
-        const index = storedPolyline.findIndex((poly) => poly.id === id);
-
-        if (index !== -1) {
-          const updatedData = {
-            id: id,
-            encoded_polyline: encodedPolyline,
-          };
-
-          try {
-            const response = await axios.put(
-              `http://localhost:8888/api/polyline.php`,
-              updatedData
-            );
-
-            if (response.status === 200) {
-              // Jika permintaan PUT berhasil, perbarui polyline di dalam storedPolyline
-              storedPolyline[index] = {
-                id: id,
-                encoded_polyline: encodedPolyline,
-              };
-            }
-          } catch (error) {
-            console.error("Error saat mengirim permintaan PUT:", error);
+        // Find and update the polyline with the new encoded coordinates
+        updatedPolylines = updatedPolylines.map((poly) => {
+          if (poly.id === id) {
+            return { id, encodedPolyline };
           }
-        } else {
-          console.error("Polyline dengan ID tidak ditemukan:", id);
-        }
+          return poly;
+        });
 
-        console.log("Updated Polylines:", storedPolyline);
+        // Add more debugging logs
+        console.log("Updated Polylines:", updatedPolylines);
       });
 
-      console.log(storedPolyline);
+      // Store the updated polylines back in local storage
+      localStorage.setItem(
+        "polylineCoordinates",
+        JSON.stringify(updatedPolylines)
+      );
+      console.log(updatedPolylines);
 
-      // Jika diperlukan, perbarui state dengan polyline yang sudah diperbarui
-      // setEncodedPolylines(updatedPolylines);
+      // If needed, update the state with the updated polylines
+      setEncodedPolylines(updatedPolylines);
     }
   };
 
-  const onDeleted = async () => {
-    await axios.delete("http://localhost:8888/api/polyline.php").then(() => {
-      // Setelah berhasil menghapus polyline, perbarui data dari server
-      axios
-        .get("http://localhost:8888/api/polyline.php")
-        .then((response) => {
-          setEncodedPolylines(response.data);
-        })
-        .catch((error) => {
-          console.error("Error saat mengambil data polyline:", error);
-        });
+  const onDeleted = (e) => {
+    e.layers.eachLayer((layer) => {
+      const id = layer.options.id;
+
+      // Remove the polyline with the matching id from the state
+      setEncodedPolylines((prevPolylines) =>
+        prevPolylines.filter((polyline) => polyline.id !== id)
+      );
     });
   };
 
@@ -151,8 +121,8 @@ const Polyline = () => {
       // Clear existing layers from the feature group
       featureGroupRef.current.clearLayers();
       // Add the decoded polylines back to the map
-      encodedPolylines?.map((data) => {
-        const decodedCoords = polyline.decode(data.encoded_polyline);
+      encodedPolylines.forEach((data) => {
+        const decodedCoords = polyline.decode(data.encodedPolyline);
         const id = data.id;
         const polylineLayer = L.polyline(decodedCoords, {
           color: "blue",
@@ -162,6 +132,8 @@ const Polyline = () => {
       });
     }
   }, [encodedPolylines]);
+
+  console.log(encodedPolylines);
 
   return (
     <>
@@ -173,7 +145,7 @@ const Polyline = () => {
               center={{ lat: -8.60355596857304, lng: 115.25943918278261 }}
               zoom={15}
               scrollWheelZoom={true}
-              style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
+              style={{ height: "400px", width: "1000px", borderRadius: "0px" }}
             >
               <FeatureGroup ref={featureGroupRef}>
                 <EditControl
@@ -203,4 +175,4 @@ const Polyline = () => {
   );
 };
 
-export default Polyline;
+export default PolylineLocal;
