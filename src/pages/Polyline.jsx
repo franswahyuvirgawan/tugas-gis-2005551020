@@ -27,7 +27,7 @@ const Polyline = () => {
   useEffect(() => {
     // Mengambil data polyline dari endpoint GET
     axios
-      .get("http://localhost:8888/api/polyline.php")
+      .get("http://g_2005551020.gis.localnet/api/polyline.php")
       .then((response) => {
         // Menyimpan data yang diterima ke dalam state
         setEncodedPolylines(response.data);
@@ -53,28 +53,26 @@ const Polyline = () => {
 
     // POST request untuk menyimpan id dan encodedPolyline
     axios
-      .post("http://localhost:8888/api/polyline.php", {
+      .post("http://g_2005551020.gis.localnet/api/polyline.php", {
         id: id,
         encoded_polyline: encodedPolyline,
       })
+      .then(() => {
+        // Setelah permintaan POST berhasil, lakukan permintaan GET
+        return axios.get("http://g_2005551020.gis.localnet/api/polyline.php");
+      })
       .then((response) => {
-        // Setelah berhasil menambahkan polyline, perbarui data dari server
-        axios
-          .get("http://localhost:8888/api/polyline.php")
-          .then((response) => {
-            setEncodedPolylines(response.data);
-          })
-          .catch((error) => {
-            console.error("Error saat mengambil data polyline:", error);
-          });
+        setEncodedPolylines(response.data);
+      })
+      .catch((error) => {
+        console.error("Error saat mengambil data polyline:", error);
       });
   };
-
   const onEdited = async (e) => {
     let storedPolyline = [];
     try {
       const response = await axios.get(
-        "http://localhost:8888/api/polyline.php"
+        "http://g_2005551020.gis.localnet/api/polyline.php"
       );
       storedPolyline = response.data;
     } catch (error) {
@@ -104,7 +102,7 @@ const Polyline = () => {
 
           try {
             const response = await axios.put(
-              `http://localhost:8888/api/polyline.php`,
+              `http://g_2005551020.gis.localnet/api/polyline.php`,
               updatedData
             );
 
@@ -133,17 +131,19 @@ const Polyline = () => {
   };
 
   const onDeleted = async () => {
-    await axios.delete("http://localhost:8888/api/polyline.php").then(() => {
-      // Setelah berhasil menghapus polyline, perbarui data dari server
-      axios
-        .get("http://localhost:8888/api/polyline.php")
-        .then((response) => {
-          setEncodedPolylines(response.data);
-        })
-        .catch((error) => {
-          console.error("Error saat mengambil data polyline:", error);
-        });
-    });
+    await axios
+      .delete("http://g_2005551020.gis.localnet/api/polyline.php")
+      .then(() => {
+        // Setelah berhasil menghapus polyline, perbarui data dari server
+        axios
+          .get("http://g_2005551020.gis.localnet/api/polyline.php")
+          .then((response) => {
+            setEncodedPolylines(response.data);
+          })
+          .catch((error) => {
+            console.error("Error saat mengambil data polyline:", error);
+          });
+      });
   };
 
   useEffect(() => {
