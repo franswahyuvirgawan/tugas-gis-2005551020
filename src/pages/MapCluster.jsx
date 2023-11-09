@@ -52,7 +52,7 @@ function MapCluster() {
   useEffect(() => {
     // Mengambil data dari server saat komponen pertama kali dimuat
     axios
-      .get("http://localhost:8888/api/index.php")
+      .get("http://g_2005551020.gis.localnet/api/index.php")
       .then((response) => {
         // Mengisi data ke dalam state gisData
         setGisData(response.data);
@@ -67,7 +67,7 @@ function MapCluster() {
     try {
       // Mengirim data ke server menggunakan POST request
       const postResponse = await axios.post(
-        "http://localhost:8888/api/index.php",
+        "http://g_2005551020.gis.localnet/api/index.php",
         newLocationData
       );
       newLocationData.id = postResponse.data.id; // Anggap server memberikan ID dalam respons
@@ -96,7 +96,10 @@ function MapCluster() {
           locationName: newLocationName,
         };
 
-        await axios.put(`http://localhost:8888/api/index.php`, updatedData);
+        await axios.put(
+          `http://g_2005551020.gis.localnet/api/index.php`,
+          updatedData
+        );
         const updatedLocationData = gisData.map((location) => {
           if (location.id === locationId) {
             return {
@@ -117,7 +120,7 @@ function MapCluster() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8888/api/index.php")
+      .get("http://g_2005551020.gis.localnet/api/index.php")
       .then((response) => {
         // Mengubah string menjadi angka
         const gisDataWithNumbers = response.data.map((item) => ({
@@ -141,7 +144,7 @@ function MapCluster() {
 
       // Kirim permintaan DELETE ke server dengan data dalam body
       const deleteResponse = await axios.delete(
-        `http://localhost:8888/api/index.php`,
+        `http://g_2005551020.gis.localnet/api/index.php`,
         {
           data: requestData, // Menyertakan data dalam body request
           headers: {
